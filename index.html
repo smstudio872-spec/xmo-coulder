@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="COULDER">
+    <title>COULDER | نظام الطقس الذكي - XMO</title>
+    <style>
+        :root {
+            --bg-main: linear-gradient(135deg, #090d16 0%, #111c33 50%, #0b1324 100%);
+            --glass-bg: rgba(255, 255, 255, 0.06);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.35);
+            --gold: #fbbf24;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --radius: 20px;
+        }
+
+        body.theme-clear {
+            --bg-main: linear-gradient(135deg, #0c2442 0%, #154378 50%, #0a192f 100%);
+        }
+        body.theme-cloudy {
+            --bg-main: linear-gradient(135deg, #161d29 0%, #273447 50%, #111827 100%);
+        }
+        body.theme-rain {
+            --bg-main: linear-gradient(135deg, #08121e 0%, #102a43 50%, #060d17 100%);
+        }
+        body.theme-night {
+            --bg-main: linear-gradient(135deg, #04070d 0%, #0c1426 50%, #050811 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-main);
+            min-height: 100dvh;
+            line-height: 1.5;
+            padding: env(safe-area-inset-top) 14px env(safe-area-inset-bottom);
+            transition: background 0.8s ease;
+            overflow-x: hidden;
+        }
+
+        .splash-screen {
+            position: fixed;
+            inset: 0;
+            background: #070b14;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        .splash-screen.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .splash-box {
+            text-align: center;
+            padding: 20px;
+        }
+        .splash-svg {
+            animation: floatLogo 2.5s ease-in-out infinite;
+            filter: drop-shadow(0 0 18px rgba(56, 189, 248, 0.4));
+        }
+        @keyframes floatLogo {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        .splash-title {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            margin-top: 10px;
+            background: linear-gradient(90deg, #fff, #38bdf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .splash-subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+        .progress-track {
+            width: 180px;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            margin: 20px auto 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            width: 100%;
+            height: 100%;
+            background: var(--accent);
+            animation: loadProgress 1.2s ease-out forwards;
+        }
+        @keyframes loadProgress {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        .splash-brand {
+            position: absolute;
+            bottom: 28px;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+        }
+        .splash-brand span {
+            color: var(--accent);
+            font-weight: 800;
+        }
+
+        .container {
+            max-width: 780px;
+            margin: 0 auto;
+            padding-top: 14px;
+            padding-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            position: relative;
+        }
+
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 16px;
+        }
+
+        .header-card {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            position: relative;
+            z-index: 30;
+        }
+        .brand-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-text {
+            font-weight: 800;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            display: block;
+            line-height: 1.1;
+        }
+        .badge {
+            font-size: 0.65rem;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent);
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .search-bar {
+            display: flex;
+            flex: 1;
+            min-width: 260px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        input[type="search"],
+        input[type="text"] {
+            flex: 1;
+            min-width: 150px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            padding: 11px 14px;
+            border-radius: 14px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            background: var(--accent);
+            color: #06101f;
+            border: none;
+            padding: 0 16px;
+            min-height: 44px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: transform 0.15s, opacity 0.2s, background 0.2s;
+            white-space: nowrap;
+        }
+        button:active {
+            transform: scale(0.96);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #gps-btn, #top-history-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+            padding: 0 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        #top-history-btn.open {
+            background: rgba(56, 189, 248, 0.22);
+            border-color: var(--accent);
+            color: #e0f2fe;
+        }
+        .history-count-pill {
+            background: var(--accent);
+            color: #06101f;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 1px 6px;
+            border-radius: 999px;
+        }
+
+        /* قائمة السجل المنسدلة من الشريط العلوي */
+        .top-history-drawer {
+            position: relative;
+            z-index: 25;
+            background: rgba(9, 15, 28, 0.96);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(56, 189, 248, 0.28);
+            border-radius: var(--radius);
+            padding: 14px;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55);
+            animation: dropDrawer 0.2s ease-out;
+        }
+        @keyframes dropDrawer {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .history-title {
+            font-size: 0.92rem;
+            font-weight: 800;
+            color: #f8fafc;
+        }
+        .history-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .clear-history-btn {
+            background: rgba(239, 68, 68, 0.14);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            min-height: 30px;
+            padding: 0 10px;
+            font-size: 0.76rem;
+            border-radius: 10px;
+        }
+        .close-history-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+            min-height: 30px;
+            padding: 0 10px;
+            font-size: 0.76rem;
+            border-radius: 10px;
+        }
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 310px;
+            overflow-y: auto;
+            padding-left: 4px;
+        }
+        .history-list::-webkit-scrollbar {
+            width: 5px;
+        }
+        .history-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        .history-empty {
+            text-align: center;
+            padding: 18px 10px;
+            color: var(--text-muted);
+            font-size: 0.86rem;
+        }
+        .history-date-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .history-date-badge {
+            align-self: flex-start;
+            font-size: 0.73rem;
+            font-weight: 700;
+            color: var(--accent);
+            background: rgba(56, 189, 248, 0.12);
+            padding: 2px 10px;
+            border-radius: 999px;
+        }
+        .history-item {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .history-item:hover {
+            background: rgba(56, 189, 248, 0.08);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+        .history-item-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.74rem;
+            color: var(--text-muted);
+        }
+        .history-q {
+            font-size: 0.86rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .history-a {
+            font-size: 0.84rem;
+            color: #cbd5e1;
+            line-height: 1.55;
+        }
+
+        /* قائمة المدن وأزرار الإجراءات المرتبة */
+        .quick-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .quick-bar-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .quick-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+        .cities-menu {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+        }
+        .cities-menu::-webkit-scrollbar {
+            display: none;
+        }
+        .city-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+            min-height: 36px;
+            padding: 0 10px 0 12px;
+            font-size: 0.82rem;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+        .city-pill.active {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: var(--accent);
+            color: #e0f2fe;
+        }
+        .city-select-btn {
+            background: transparent;
+            color: inherit;
+            border: none;
+            min-height: 34px;
+            padding: 0 4px;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+        .city-remove-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-muted);
+            border: none;
+            min-height: 22px;
+            width: 22px;
+            padding: 0;
+            border-radius: 50%;
+            font-size: 0.72rem;
+            line-height: 1;
+        }
+        .city-remove-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+            color: #fca5a5;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .action-soft-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            border: 1px solid var(--glass-border);
+            min-height: 36px;
+            padding: 0 12px;
+            font-size: 0.8rem;
+            border-radius: 12px;
+        }
+        .share-btn {
+            background: linear-gradient(135deg, #38bdf8, #0284c7);
+            color: #04101d;
+            min-height: 36px;
+            padding: 0 13px;
+            font-size: 0.82rem;
+            border-radius: 12px;
+        }
+        .install-btn {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #111827;
+            min-height: 36px;
+            padding: 0 13px;
+            font-size: 0.82rem;
+            border-radius: 12px;
+        }
+
+        .status-msg {
+            text-align: center;
+            padding: 12px;
+            border-radius: 14px;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            font-size: 0.92rem;
+        }
+        .status-msg.error {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+        .hidden {
+            display: none !important;
+        }
+
+        .weather-main {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .hero-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .hero-top h2 {
+            font-size: 1.45rem;
+            font-weight: 800;
+        }
+        .muted {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .hero-icon-wrap {
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        .hero-emoji {
+            font-size: 2.6rem;
+            line-height: 1;
+        }
+        .hero-desc {
+            font-size: 0.9rem;
+            color: var(--accent);
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .hero-temp-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 16px 0;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.22);
+            border-radius: 16px;
+        }
+        .temp-big {
+            font-size: 3.4rem;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -1px;
+        }
+        .temp-big small {
+            font-size: 1.4rem;
+            color: var(--accent);
+            margin-right: 2px;
+        }
+        .feels-box {
+            text-align: left;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .smart-pulse-box {
+            margin-bottom: 14px;
+            padding: 11px 14px;
+            border-radius: 14px;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            font-size: 0.88rem;
+            color: #e0f2fe;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        @media (min-width: 600px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        .stat-box {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 11px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .stat-label {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+        .stat-val {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .ask-card h3, .section-heading {
+            font-size: 1.05rem;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+        .small-note {
+            margin-bottom: 10px;
+            font-size: 0.82rem;
+        }
+
+        .quick-questions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .chip-btn {
+            background: rgba(56, 189, 248, 0.12);
+            color: #e0f2fe;
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            min-height: 38px;
+            padding: 0 10px;
+            font-size: 0.84rem;
+            border-radius: 12px;
+            font-weight: 700;
+            width: 100%;
+        }
+        .chip-btn:hover {
+            background: rgba(56, 189, 248, 0.25);
+        }
+
+        .ask-row {
+            display: flex;
+            gap: 8px;
+        }
+        .answer-box {
+            margin-top: 12px;
+            padding: 14px;
+            background: rgba(15, 23, 42, 0.65);
+            border-right: 3px solid var(--accent);
+            border-radius: 12px;
+            font-size: 0.93rem;
+            line-height: 1.65;
+            color: #e2e8f0;
+        }
+
+        .hourly-list {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 6px 2px 10px;
+            scroll-snap-type: x mandatory;
+        }
+        .hourly-list::-webkit-scrollbar {
+            height: 5px;
+        }
+        .hourly-list::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+        }
+        .hour-item {
+            min-width: 88px;
+            scroll-snap-align: start;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 16px;
+            padding: 10px 8px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .hour-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .hour-emoji {
+            font-size: 1.5rem;
+        }
+        .hour-temp {
+            font-weight: 800;
+            font-size: 1rem;
+        }
+        .hour-meta {
+            font-size: 0.72rem;
+            color: var(--accent);
+        }
+        .hour-rain {
+            font-size: 0.7rem;
+            color: #7dd3fc;
+        }
+
+        .daily-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .day-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 11px 14px;
+            border-radius: 14px;
+            gap: 10px;
+        }
+        .day-name {
+            font-weight: 700;
+            min-width: 85px;
+            font-size: 0.92rem;
+        }
+        .day-cond {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            flex: 1;
+        }
+        .day-rain-prob {
+            font-size: 0.76rem;
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .day-temps {
+            font-weight: 700;
+            font-size: 0.95rem;
+            direction: ltr;
+        }
+        .day-temps span {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .footer-note {
+            text-align: center;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+            letter-spacing: 1px;
+        }
+        .footer-note strong {
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body class="theme-default">
+
+    <!-- الواجهة الافتتاحية -->
+    <div id="splash-screen" class="splash-screen" role="status" aria-label="جاري تحميل تطبيق كولدر">
+        <div class="splash-box">
+            <svg class="weather-logo-svg splash-svg" viewBox="0 0 120 90" width="96" height="72" aria-label="شعار طقس كولدر">
+                <defs>
+                    <linearGradient id="sunGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#fde047"/>
+                        <stop offset="100%" stop-color="#f59e0b"/>
+                    </linearGradient>
+                    <linearGradient id="cloudGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#ffffff"/>
+                        <stop offset="100%" stop-color="#bae6fd"/>
+                    </linearGradient>
+                </defs>
+                <circle cx="78" cy="34" r="18" fill="url(#sunGrad)"/>
+                <path d="M34 68h50a14 14 0 0 0 2-27.9A22 22 0 0 0 44 32a17 17 0 0 0-10 36z" fill="url(#cloudGrad)"/>
+                <path d="M46 74l-4 10M60 74l-4 10M74 74l-4 10" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+
+            <h1 class="splash-title">COULDER</h1>
+            <p class="splash-subtitle">مراقبة الغيوم، الرياح، والتنبؤ الفوري</p>
+            <div class="progress-track">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+        <div class="splash-brand">POWERED BY <span>XMO</span></div>
+    </div>
+
+    <div class="container">
+        <!-- الشريط العلوي مع لوغو الطقس والاسم والبحث وزر السجل -->
+        <header class="header-card glass">
+            <div class="brand-area">
+                <svg class="weather-logo-svg" viewBox="0 0 120 90" width="44" height="34" aria-hidden="true">
+                    <circle cx="78" cy="34" r="18" fill="#fbbf24"/>
+                    <path d="M34 68h50a14 14 0 0 0 2-27.9A22 22 0 0 0 44 32a17 17 0 0 0-10 36z" fill="#f8fafc"/>
+                </svg>
+                <div>
+                    <span class="logo-text">COULDER</span>
+                    <span class="badge">XMO CORE</span>
+                </div>
+            </div>
+
+            <form id="search-form" class="search-bar" role="search">
+                <input 
+                    type="search" 
+                    id="city-input" 
+                    inputmode="search"
+                    enterkeyhint="search"
+                    aria-label="اسم المدينة"
+                    placeholder="اسم المدينة (مثال: Jijel, Algiers)..." 
+                    autocomplete="off"
+                    spellcheck="false">
+                <button type="submit" id="search-btn" aria-label="بحث عن المدينة">بحث</button>
+                <button type="button" id="gps-btn" title="تحديد موقعي الحالي" aria-label="استخدام موقعي الحالي عبر GPS">GPS</button>
+                <button type="button" id="top-history-btn" aria-expanded="false" aria-controls="top-history-drawer">
+                    <span>📜 السجل</span>
+                    <span id="history-count" class="history-count-pill">0</span>
+                </button>
+            </form>
+        </header>
+
+        <!-- قائمة السجل المنسدلة من الشريط العلوي -->
+        <aside id="top-history-drawer" class="top-history-drawer hidden" aria-label="سجل المحادثات العلوي">
+            <div class="history-header">
+                <span class="history-title">📜 سجل المحادثات (اضغط على أي سؤال لإعادته)</span>
+                <div class="history-actions">
+                    <button type="button" id="clear-history-btn" class="clear-history-btn">مسح السجل</button>
+                    <button type="button" id="close-history-btn" class="close-history-btn">إغلاق</button>
+                </div>
+            </div>
+            <div id="history-list" class="history-list"></div>
+        </aside>
+
+        <!-- قائمة المدن وأزرار الإجراءات -->
+        <section class="quick-bar glass" aria-label="قائمة المدن والأزرار">
+            <div class="quick-bar-top">
+                <span class="quick-label">قائمة المدن</span>
+                <div class="action-buttons">
+                    <button type="button" id="save-fav-btn" class="action-soft-btn">⭐ حفظ المدينة</button>
+                    <button type="button" id="share-btn" class="share-btn">📤 مشاركة الجو</button>
+                    <button type="button" id="install-btn" class="install-btn hidden">📲 تثبيت التطبيق</button>
+                </div>
+            </div>
+            <div id="favorites-strip" class="cities-menu" role="list"></div>
+        </section>
+
+        <div id="status-msg" class="status-msg hidden" role="alert" aria-live="polite"></div>
+
+        <!-- لوحة الطقس الرئيسية -->
+        <main id="weather-main" class="weather-main hidden">
+            
+            <!-- البطاقة الشاملة -->
+            <section class="hero-card glass" aria-label="حالة الطقس الحالية">
+                <div class="hero-top">
+                    <div>
+                        <h2 id="city-title">--</h2>
+                        <p id="date-label" class="muted">--</p>
+                    </div>
+                    <div class="hero-icon-wrap">
+                        <span id="main-emoji" class="hero-emoji" aria-hidden="true">⛅</span>
+                        <span id="main-desc" class="hero-desc">--</span>
+                    </div>
+                </div>
+
+                <div class="hero-temp-row">
+                    <div class="temp-big"><span id="temp-now">--</span><small>°C</small></div>
+                    <div class="feels-box">
+                        <div id="feels-like">الإحساس: --°C</div>
+                        <div id="cloud-banner">الغيوم: --%</div>
+                    </div>
+                </div>
+
+                <div id="smart-pulse-box" class="smart-pulse-box">⚡ جاري تحليل نبض الطقس...</div>
+
+                <!-- تفاصيل الغيوم والرياح وكل المؤشرات -->
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <span class="stat-label">تغطية الغيوم</span>
+                        <span id="cloud-cover" class="stat-val">--%</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">سرعة الرياح</span>
+                        <span id="wind-speed" class="stat-val">-- km/h</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">اتجاه الرياح</span>
+                        <span id="wind-dir" class="stat-val">--</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">الرطوبة</span>
+                        <span id="humidity" class="stat-val">--%</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">الضغط الجوي</span>
+                        <span id="pressure" class="stat-val">-- hPa</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">الأشعة فوق البنفسجية UV</span>
+                        <span id="uv-val" class="stat-val">--</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">هطول الأمطار</span>
+                        <span id="precip-val" class="stat-val">-- mm</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">حالة النهار/الليل</span>
+                        <span id="day-night" class="stat-val">--</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- قسم اسأل كولدر عن الطقس -->
+            <section class="ask-card glass" aria-label="المساعد الذكي للطقس">
+                <h3>اسأل COULDER عن حالة الجو</h3>
+                <p class="muted small-note">اختصارات سريعة أو اكتب سؤالك مباشرة:</p>
+                
+                <div class="quick-questions" role="group" aria-label="اختصارات الأسئلة">
+                    <button type="button" class="chip-btn" data-q="غدا">📅 غدا</button>
+                    <button type="button" class="chip-btn" data-q="الاسبوع">📆 الأسبوع</button>
+                    <button type="button" class="chip-btn" data-q="الرياح">💨 الرياح</button>
+                </div>
+
+                <form id="ask-form" class="ask-row">
+                    <input 
+                        type="text" 
+                        id="question-input" 
+                        enterkeyhint="send"
+                        aria-label="اكتب سؤالك عن الطقس"
+                        placeholder="اكتب سؤالك هنا..." 
+                        autocomplete="off">
+                    <button type="submit" id="ask-btn">اسأل</button>
+                </form>
+                <div id="answer-box" class="answer-box" aria-live="polite">
+                    اطرح سؤالاً بعد تحميل بيانات المدينة للحصول على إجابة مباشرة من قراءات الطقس الحالية والتوقعات.
+                </div>
+            </section>
+
+            <!-- التوقعات الساعية -->
+            <section class="glass" aria-label="التوقعات الساعية">
+                <h3 class="section-heading">التوقعات الساعية (24 ساعة)</h3>
+                <div id="hourly-list" class="hourly-list" tabindex="0"></div>
+            </section>
+
+            <!-- التوقعات اليومية -->
+            <section class="glass" aria-label="التوقعات الأسبوعية">
+                <h3 class="section-heading">التوقعات الأسبوعية (7 أيام)</h3>
+                <div id="daily-list" class="daily-list"></div>
+            </section>
+
+        </main>
+
+        <footer class="footer-note">
+            COULDER WEATHER &bull; POWERED BY <strong>XMO</strong>
+        </footer>
+    </div>
+
+    <script>
+        (() => {
+            "use strict";
+
+            const STORAGE_KEYS = {
+                LAST_PLACE: "coulder_last_place_v1",
+                CHAT_HISTORY: "coulder_chat_history_v1",
+                FAVORITES: "coulder_favorites_v1",
+                WEATHER_CACHE: "coulder_weather_cache_v1"
+            };
+
+            const splashScreen = document.getElementById("splash-screen");
+            const searchForm = document.getElementById("search-form");
+            const cityInput = document.getElementById("city-input");
+            const searchBtn = document.getElementById("search-btn");
+            const gpsBtn = document.getElementById("gps-btn");
+            const topHistoryBtn = document.getElementById("top-history-btn");
+            const historyCountEl = document.getElementById("history-count");
+            const topHistoryDrawer = document.getElementById("top-history-drawer");
+            const closeHistoryBtn = document.getElementById("close-history-btn");
+
+            const statusMsg = document.getElementById("status-msg");
+            const weatherMain = document.getElementById("weather-main");
+
+            const favoritesStrip = document.getElementById("favorites-strip");
+            const saveFavBtn = document.getElementById("save-fav-btn");
+            const shareBtn = document.getElementById("share-btn");
+            const installBtn = document.getElementById("install-btn");
+            const smartPulseBox = document.getElementById("smart-pulse-box");
+
+            const askForm = document.getElementById("ask-form");
+            const questionInput = document.getElementById("question-input");
+            const answerBox = document.getElementById("answer-box");
+            const chipButtons = document.querySelectorAll(".chip-btn");
+
+            const historyList = document.getElementById("history-list");
+            const clearHistoryBtn = document.getElementById("clear-history-btn");
+
+            let currentWeatherState = null;
+            let deferredInstallPrompt = null;
+
+            function escapeHTML(str) {
+                return String(str).replace(/[&<>"']/g, (ch) => ({
+                    "&": "&amp;",
+                    "<": "&lt;",
+                    ">": "&gt;",
+                    "\"": "&quot;",
+                    "'": "&#39;"
+                }[ch]));
+            }
+
+            function normalizeArabic(text) {
+                return String(text || "")
+                    .toLowerCase()
+                    .replace(/[\u064B-\u065F]/g, "")
+                    .replace(/[أإآ]/g, "ا")
+                    .replace(/ى/g, "ي")
+                    .replace(/ة/g, "ه")
+                    .trim();
+            }
+
+            function extractPrimaryCityName(fullName) {
+                return String(fullName || "").split("،")[0].split(",")[0].trim();
+            }
+
+            function parseLocalDate(isoDateStr) {
+                const [y, m, d] = isoDateStr.split("-").map(Number);
+                return new Date(y, m - 1, d);
+            }
+
+            /* التحكم بدرج السجل العلوي */
+            function setHistoryDrawerOpen(isOpen) {
+                if (isOpen) {
+                    topHistoryDrawer.classList.remove("hidden");
+                    topHistoryBtn.classList.add("open");
+                    topHistoryBtn.setAttribute("aria-expanded", "true");
+                } else {
+                    topHistoryDrawer.classList.add("hidden");
+                    topHistoryBtn.classList.remove("open");
+                    topHistoryBtn.setAttribute("aria-expanded", "false");
+                }
+            }
+
+            topHistoryBtn.addEventListener("click", () => {
+                const isCurrentlyOpen = !topHistoryDrawer.classList.contains("hidden");
+                setHistoryDrawerOpen(!isCurrentlyOpen);
+            });
+
+            closeHistoryBtn.addEventListener("click", () => {
+                setHistoryDrawerOpen(false);
+            });
+
+            document.addEventListener("click", (e) => {
+                if (
+                    !topHistoryDrawer.classList.contains("hidden") &&
+                    !topHistoryDrawer.contains(e.target) &&
+                    !topHistoryBtn.contains(e.target)
+                ) {
+                    setHistoryDrawerOpen(false);
+                }
+            });
+
+            /* تفعيل دعم PWA ديناميكياً داخل ملف واحد */
+            function setupPWA() {
+                const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><circle cx="78" cy="34" r="18" fill="#fbbf24"/><path d="M34 68h50a14 14 0 0 0 2-27.9A22 22 0 0 0 44 32a17 17 0 0 0-10 36z" fill="#38bdf8"/></svg>`;
+                const iconDataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgIcon);
+
+                const manifestObj = {
+                    name: "COULDER | نظام الطقس الذكي - XMO",
+                    short_name: "COULDER",
+                    start_url: "./",
+                    display: "standalone",
+                    background_color: "#070b14",
+                    theme_color: "#0f172a",
+                    dir: "rtl",
+                    lang: "ar",
+                    icons: [
+                        {
+                            src: iconDataUrl,
+                            sizes: "192x192",
+                            type: "image/svg+xml",
+                            purpose: "any maskable"
+                        }
+                    ]
+                };
+
+                try {
+                    const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: "application/manifest+json" });
+                    const manifestUrl = URL.createObjectURL(manifestBlob);
+                    const linkEl = document.createElement("link");
+                    linkEl.rel = "manifest";
+                    linkEl.href = manifestUrl;
+                    document.head.appendChild(linkEl);
+                } catch (_) {}
+
+                if ("serviceWorker" in navigator) {
+                    const swCode = `
+                        const CACHE_NAME = "coulder-xmo-v1";
+                        self.addEventListener("install", (event) => {
+                            self.skipWaiting();
+                        });
+                        self.addEventListener("activate", (event) => {
+                            event.waitUntil(self.clients.claim());
+                        });
+                        self.addEventListener("fetch", (event) => {
+                            if (event.request.method !== "GET") return;
+                            event.respondWith(
+                                fetch(event.request).catch(() => caches.match(event.request))
+                            );
+                        });
+                    `;
+                    try {
+                        const swBlob = new Blob([swCode], { type: "application/javascript" });
+                        const swUrl = URL.createObjectURL(swBlob);
+                        navigator.serviceWorker.register(swUrl).catch(() => {});
+                    } catch (_) {}
+                }
+            }
+
+            window.addEventListener("beforeinstallprompt", (e) => {
+                e.preventDefault();
+                deferredInstallPrompt = e;
+                installBtn.classList.remove("hidden");
+            });
+
+            installBtn.addEventListener("click", async () => {
+                if (!deferredInstallPrompt) return;
+                deferredInstallPrompt.prompt();
+                await deferredInstallPrompt.userChoice;
+                deferredInstallPrompt = null;
+                installBtn.classList.add("hidden");
+            });
+
+            /* قائمة المدن المفضلة وحفظها وحذفها */
+            function loadFavorites() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEYS.FAVORITES);
+                    const parsed = raw ? JSON.parse(raw) : [];
+                    return Array.isArray(parsed) && parsed.length > 0 ? parsed : ["Jijel", "Algiers"];
+                } catch (_) {
+                    return ["Jijel", "Algiers"];
+                }
+            }
+
+            function saveFavoritesList(list) {
+                try {
+                    localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(list));
+                } catch (_) {}
+            }
+
+            function isSameCity(favCity, currentCityName) {
+                const a = normalizeArabic(extractPrimaryCityName(favCity));
+                const b = normalizeArabic(extractPrimaryCityName(currentCityName));
+                return Boolean(a && b && a === b);
+            }
+
+            function renderFavorites() {
+                const favs = loadFavorites();
+                favoritesStrip.innerHTML = "";
+                const currentCity = currentWeatherState?.city || "";
+
+                favs.forEach((city) => {
+                    const pill = document.createElement("div");
+                    pill.className = "city-pill" + (isSameCity(city, currentCity) ? " active" : "");
+                    pill.setAttribute("role", "listitem");
+
+                    const selectBtn = document.createElement("button");
+                    selectBtn.type = "button";
+                    selectBtn.className = "city-select-btn";
+                    selectBtn.textContent = `📍 ${city}`;
+                    selectBtn.addEventListener("click", () => {
+                        cityInput.value = city;
+                        fetchCityWeather(city);
+                    });
+
+                    const removeBtn = document.createElement("button");
+                    removeBtn.type = "button";
+                    removeBtn.className = "city-remove-btn";
+                    removeBtn.setAttribute("aria-label", `حذف ${city}`);
+                    removeBtn.textContent = "×";
+                    removeBtn.addEventListener("click", (ev) => {
+                        ev.stopPropagation();
+                        const updated = loadFavorites().filter((item) => item !== city);
+                        saveFavoritesList(updated.length > 0 ? updated : ["Jijel"]);
+                        renderFavorites();
+                    });
+
+                    pill.appendChild(selectBtn);
+                    pill.appendChild(removeBtn);
+                    favoritesStrip.appendChild(pill);
+                });
+            }
+
+            saveFavBtn.addEventListener("click", () => {
+                if (!currentWeatherState) return;
+                const cleanName = extractPrimaryCityName(currentWeatherState.city);
+                if (!cleanName) return;
+
+                let favs = loadFavorites();
+                const exists = favs.some((c) => normalizeArabic(c) === normalizeArabic(cleanName));
+                if (!exists) {
+                    favs = [cleanName, ...favs].slice(0, 6);
+                    saveFavoritesList(favs);
+                    renderFavorites();
+                    showStatus(`تمت إضافة "${cleanName}" إلى قائمة المدن.`);
+                    setTimeout(hideStatus, 2000);
+                } else {
+                    renderFavorites();
+                    showStatus(`"${cleanName}" موجودة بالفعل في القائمة.`);
+                    setTimeout(hideStatus, 1800);
+                }
+            });
+
+            /* مشاركة حالة الطقس لنشر التطبيق */
+            shareBtn.addEventListener("click", async () => {
+                if (!currentWeatherState) return;
+                const { city, current } = currentWeatherState;
+                const info = decodeWeather(current.weather_code, current.is_day);
+                const temp = Math.round(current.temperature_2m);
+                const clouds = current.cloud_cover;
+                const wind = Math.round(current.wind_speed_10m);
+
+                const shareUrl = new URL(window.location.href);
+                shareUrl.searchParams.set("city", extractPrimaryCityName(city));
+
+                const shareText =
+                    `⚡ طقس ${city} الآن عبر COULDER (XMO):\n` +
+                    `${info.emoji} ${info.desc} | الحرارة: ${temp}°C\n` +
+                    `☁️ الغيوم: ${clouds}% | 💨 الرياح: ${wind} km/h\n` +
+                    `اكتشف حالة مدينتك الآن:\n${shareUrl.toString()}`;
+
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: `طقس ${city} - COULDER`,
+                            text: shareText,
+                            url: shareUrl.toString()
+                        });
+                        return;
+                    } catch (_) {}
+                }
+
+                try {
+                    await navigator.clipboard.writeText(shareText);
+                    showStatus("تم نسخ تقرير الطقس ورابط المشاركة بنجاح!");
+                    setTimeout(hideStatus, 2500);
+                } catch (_) {
+                    answerBox.textContent = shareText;
+                }
+            });
+
+            /* سجل المحادثات المحفوظ بالتواريخ في القائمة العلوية */
+            function loadChatHistory() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEYS.CHAT_HISTORY);
+                    const parsed = raw ? JSON.parse(raw) : [];
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (_) {
+                    return [];
+                }
+            }
+
+            function saveChatEntry(city, question, answerHtml) {
+                const now = new Date();
+                const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+                const dateLabel = now.toLocaleDateString("ar-DZ", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric"
+                });
+                const timeLabel = now.toLocaleTimeString("ar-DZ", {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+
+                const history = loadChatHistory();
+                history.unshift({
+                    id: Date.now(),
+                    dateKey,
+                    dateLabel,
+                    timeLabel,
+                    city,
+                    question,
+                    answerHtml
+                });
+
+                const trimmed = history.slice(0, 60);
+                try {
+                    localStorage.setItem(STORAGE_KEYS.CHAT_HISTORY, JSON.stringify(trimmed));
+                } catch (_) {}
+
+                renderChatHistory();
+            }
+
+            function renderChatHistory() {
+                const history = loadChatHistory();
+                historyCountEl.textContent = String(history.length);
+
+                if (history.length === 0) {
+                    historyList.innerHTML = `<div class="history-empty">لا توجد أسئلة محفوظة في السجل بعد. اسأل COULDER ليتم حفظها هنا.</div>`;
+                    return;
+                }
+
+                historyList.innerHTML = "";
+
+                const groups = new Map();
+                for (const entry of history) {
+                    if (!groups.has(entry.dateKey)) {
+                        groups.set(entry.dateKey, {
+                            dateLabel: entry.dateLabel,
+                            items: []
+                        });
+                    }
+                    groups.get(entry.dateKey).items.push(entry);
+                }
+
+                groups.forEach((group) => {
+                    const groupEl = document.createElement("div");
+                    groupEl.className = "history-date-group";
+
+                    const dateBadge = document.createElement("span");
+                    dateBadge.className = "history-date-badge";
+                    dateBadge.textContent = `📅 ${group.dateLabel}`;
+                    groupEl.appendChild(dateBadge);
+
+                    for (const item of group.items) {
+                        const card = document.createElement("div");
+                        card.className = "history-item";
+                        card.title = "اضغط لإعادة طرح السؤال";
+                        card.innerHTML = `
+                            <div class="history-item-top">
+                                <span>📍 ${escapeHTML(item.city)}</span>
+                                <span>🕒 ${escapeHTML(item.timeLabel)}</span>
+                            </div>
+                            <div class="history-q">س: ${escapeHTML(item.question)}</div>
+                            <div class="history-a">${item.answerHtml}</div>
+                        `;
+                        card.addEventListener("click", () => {
+                            setHistoryDrawerOpen(false);
+                            const targetCity = extractPrimaryCityName(item.city);
+                            const currentCity = extractPrimaryCityName(currentWeatherState?.city || "");
+                            if (targetCity && normalizeArabic(targetCity) !== normalizeArabic(currentCity)) {
+                                cityInput.value = targetCity;
+                                fetchCityWeather(targetCity).then(() => {
+                                    answerWeatherQuestion(item.question);
+                                });
+                            } else {
+                                answerWeatherQuestion(item.question);
+                            }
+                        });
+                        groupEl.appendChild(card);
+                    }
+
+                    historyList.appendChild(groupEl);
+                });
+            }
+
+            function saveLastPlace(placeObj) {
+                try {
+                    localStorage.setItem(STORAGE_KEYS.LAST_PLACE, JSON.stringify(placeObj));
+                } catch (_) {}
+            }
+
+            function getSavedLastPlace() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEYS.LAST_PLACE);
+                    return raw ? JSON.parse(raw) : null;
+                } catch (_) {
+                    return null;
+                }
+            }
+
+            function getCachedWeather(cacheKey) {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEYS.WEATHER_CACHE);
+                    const all = raw ? JSON.parse(raw) : {};
+                    const entry = all[cacheKey];
+                    if (entry && (Date.now() - entry.timestamp) < 15 * 60 * 1000) {
+                        return entry.data;
+                    }
+                } catch (_) {}
+                return null;
+            }
+
+            function setCachedWeather(cacheKey, data) {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEYS.WEATHER_CACHE);
+                    const all = raw ? JSON.parse(raw) : {};
+                    all[cacheKey] = { timestamp: Date.now(), data };
+                    localStorage.setItem(STORAGE_KEYS.WEATHER_CACHE, JSON.stringify(all));
+                } catch (_) {}
+            }
+
+            window.addEventListener("load", () => {
+                setupPWA();
+                renderChatHistory();
+                renderFavorites();
+
+                setTimeout(() => {
+                    splashScreen.classList.add("fade-out");
+                }, 1100);
+
+                const urlCity = new URLSearchParams(window.location.search).get("city");
+                if (urlCity && urlCity.trim()) {
+                    cityInput.value = urlCity.trim();
+                    fetchCityWeather(urlCity.trim());
+                    return;
+                }
+
+                const savedPlace = getSavedLastPlace();
+                if (savedPlace && typeof savedPlace.lat === "number" && typeof savedPlace.lon === "number") {
+                    loadWeatherByCoords(savedPlace.lat, savedPlace.lon, savedPlace.name);
+                } else {
+                    fetchCityWeather("Jijel");
+                }
+            });
+
+            function decodeWeather(code, isDay = 1) {
+                const map = {
+                    0: { desc: "سماء صافية تماماً", emoji: isDay ? "☀️" : "🌙", theme: isDay ? "theme-clear" : "theme-night" },
+                    1: { desc: "صافي غالباً", emoji: isDay ? "🌤️" : "🌙", theme: isDay ? "theme-clear" : "theme-night" },
+                    2: { desc: "غائم جزئياً", emoji: "⛅", theme: "theme-cloudy" },
+                    3: { desc: "غائم كلياً", emoji: "☁️", theme: "theme-cloudy" },
+                    45: { desc: "ضباب", emoji: "🌫️", theme: "theme-cloudy" },
+                    48: { desc: "ضباب كثيف متجمد", emoji: "🌫️", theme: "theme-cloudy" },
+                    51: { desc: "رذاذ خفيف", emoji: "🌦️", theme: "theme-rain" },
+                    53: { desc: "رذاذ متوسط", emoji: "🌦️", theme: "theme-rain" },
+                    55: { desc: "رذاذ كثيف", emoji: "🌧️", theme: "theme-rain" },
+                    61: { desc: "مطر خفيف", emoji: "🌧️", theme: "theme-rain" },
+                    63: { desc: "مطر متوسط", emoji: "🌧️", theme: "theme-rain" },
+                    65: { desc: "مطر غزير", emoji: "⛈️", theme: "theme-rain" },
+                    71: { desc: "ثلوج خفيفة", emoji: "🌨️", theme: "theme-cloudy" },
+                    73: { desc: "ثلوج متوسطة", emoji: "❄️", theme: "theme-cloudy" },
+                    75: { desc: "ثلوج كثيفة", emoji: "❄️", theme: "theme-cloudy" },
+                    80: { desc: "زخات مطر خفيفة", emoji: "🌦️", theme: "theme-rain" },
+                    81: { desc: "زخات مطر متوسطة", emoji: "🌧️", theme: "theme-rain" },
+                    82: { desc: "زخات مطر عنيفة", emoji: "⛈️", theme: "theme-rain" },
+                    95: { desc: "عاصفة رعدية", emoji: "⛈️", theme: "theme-rain" },
+                    96: { desc: "عاصفة رعدية مع برد", emoji: "⛈️", theme: "theme-rain" },
+                    99: { desc: "عاصفة رعدية شديدة", emoji: "⛈️", theme: "theme-rain" }
+                };
+                return map[code] || { desc: "متقلب", emoji: "⛅", theme: "theme-default" };
+            }
+
+            function getWindDirection(deg) {
+                const dirs = ["شمالية ⬇", "شمالية شرقية ↙", "شرقية ⬅", "جنوبية شرقية ↖", "جنوبية ⬆", "جنوبية غربية ↗", "غربية ➡", "شمالية غربية ↘"];
+                const index = Math.floor(((deg + 22.5) % 360) / 45);
+                return `${dirs[index]} (${deg}°)`;
+            }
+
+            function buildSmartPulse(current, daily) {
+                const wind = Math.round(current.wind_speed_10m);
+                const rainProb = daily.precipitation_probability_max?.[0] ?? 0;
+                const feels = Math.round(current.apparent_temperature);
+
+                if (current.precipitation > 0 || rainProb >= 60) {
+                    return `☔ تنبيه ذكي: احتمالية الأمطار اليوم مرتفعة (${rainProb}%) — خذ مظلة أو معطفاً واقياً من المطر.`;
+                }
+                if (wind >= 35) {
+                    return `💨 تنبيه رياح: سرعة الرياح نشطة (${wind} km/h) — انتبه أثناء القيادة أو التنقل في الأماكن المكشوفة.`;
+                }
+                if (feels < 12) {
+                    return `🧥 تنبيه برودة: الإحساس الفعلي ${feels}°C — ارتدِ ملابس دافئة قبل الخروج.`;
+                }
+                return `✅ نبض الطقس: الأجواء مستقرة ومناسبة للتنقل والأنشطة اليومية، والغيوم ${current.cloud_cover}%.`;
+            }
+
+            function showStatus(msg, isError = false) {
+                statusMsg.textContent = msg;
+                statusMsg.className = isError ? "status-msg error" : "status-msg";
+                statusMsg.classList.remove("hidden");
+            }
+
+            function hideStatus() {
+                statusMsg.classList.add("hidden");
+            }
+
+            async function fetchCityWeather(cityName) {
+                const query = cityName.trim();
+                if (!query) return;
+
+                searchBtn.disabled = true;
+                showStatus(`جاري جلب بيانات الطقس لـ "${query}"...`);
+
+                try {
+                    const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=ar&format=json`;
+                    const geoRes = await fetch(geoUrl);
+                    if (!geoRes.ok) throw new Error("تعذر الاتصال بخادم الخرائط");
+
+                    const geoData = await geoRes.json();
+                    if (!geoData.results || geoData.results.length === 0) {
+                        throw new Error(`لم يتم العثور على مدينة باسم "${query}". تأكد من كتابة الاسم بشكل صحيح.`);
+                    }
+
+                    const place = geoData.results[0];
+                    const displayName = place.country ? `${place.name}، ${place.country}` : place.name;
+
+                    await loadWeatherByCoords(place.latitude, place.longitude, displayName);
+                } catch (err) {
+                    showStatus(err.message, true);
+                } finally {
+                    searchBtn.disabled = false;
+                }
+            }
+
+            async function loadWeatherByCoords(lat, lon, displayName) {
+                const cacheKey = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+                const cached = getCachedWeather(cacheKey);
+                if (cached) {
+                    currentWeatherState = {
+                        city: displayName,
+                        current: cached.current,
+                        hourly: cached.hourly,
+                        daily: cached.daily
+                    };
+                    saveLastPlace({ lat, lon, name: displayName });
+                    renderWeather(currentWeatherState);
+                    renderFavorites();
+                    hideStatus();
+                    weatherMain.classList.remove("hidden");
+                    return;
+                }
+
+                try {
+                    const params = new URLSearchParams({
+                        latitude: lat,
+                        longitude: lon,
+                        current: "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,surface_pressure,wind_speed_10m,wind_direction_10m",
+                        hourly: "temperature_2m,weather_code,cloud_cover,wind_speed_10m,precipitation_probability,is_day",
+                        daily: "weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max",
+                        timezone: "auto",
+                        forecast_days: 7
+                    });
+
+                    const weatherUrl = `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
+                    const res = await fetch(weatherUrl);
+                    if (!res.ok) throw new Error("فشل في تحميل بيانات الأرصاد الجوية");
+
+                    const data = await res.json();
+                    setCachedWeather(cacheKey, data);
+
+                    currentWeatherState = {
+                        city: displayName,
+                        current: data.current,
+                        hourly: data.hourly,
+                        daily: data.daily
+                    };
+
+                    saveLastPlace({ lat, lon, name: displayName });
+                    renderWeather(currentWeatherState);
+                    renderFavorites();
+                    hideStatus();
+                    weatherMain.classList.remove("hidden");
+                } catch (err) {
+                    showStatus(err.message, true);
+                }
+            }
+
+            function renderWeather(state) {
+                const { city, current, hourly, daily } = state;
+                const info = decodeWeather(current.weather_code, current.is_day);
+
+                document.body.className = info.theme;
+
+                document.getElementById("city-title").textContent = city;
+                const nowDate = new Date();
+                document.getElementById("date-label").textContent = nowDate.toLocaleDateString("ar-DZ", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+
+                document.getElementById("main-emoji").textContent = info.emoji;
+                document.getElementById("main-desc").textContent = info.desc;
+                document.getElementById("temp-now").textContent = Math.round(current.temperature_2m);
+                document.getElementById("feels-like").textContent = `الإحساس الفعلي: ${Math.round(current.apparent_temperature)}°C`;
+                document.getElementById("cloud-banner").textContent = `تغطية الغيوم: ${current.cloud_cover}%`;
+
+                smartPulseBox.textContent = buildSmartPulse(current, daily);
+
+                document.getElementById("cloud-cover").textContent = `${current.cloud_cover}%`;
+                document.getElementById("wind-speed").textContent = `${Math.round(current.wind_speed_10m)} km/h`;
+                document.getElementById("wind-dir").textContent = getWindDirection(current.wind_direction_10m);
+                document.getElementById("humidity").textContent = `${current.relative_humidity_2m}%`;
+                document.getElementById("pressure").textContent = `${Math.round(current.surface_pressure)} hPa`;
+                document.getElementById("uv-val").textContent = daily.uv_index_max[0] ?? "--";
+                document.getElementById("precip-val").textContent = `${current.precipitation} mm`;
+                document.getElementById("day-night").textContent = current.is_day ? "نهار ☀️" : "ليل 🌙";
+
+                const hourlyList = document.getElementById("hourly-list");
+                hourlyList.innerHTML = "";
+                const currentHourISO = current.time.slice(0, 13);
+                let startIdx = hourly.time.findIndex(t => t.startsWith(currentHourISO));
+                if (startIdx < 0) startIdx = 0;
+
+                for (let i = startIdx; i < Math.min(startIdx + 24, hourly.time.length); i++) {
+                    const hourStr = hourly.time[i].split("T")[1];
+                    const hIsDay = hourly.is_day?.[i] ?? 1;
+                    const hInfo = decodeWeather(hourly.weather_code[i], hIsDay);
+                    const temp = Math.round(hourly.temperature_2m[i]);
+                    const clouds = hourly.cloud_cover[i];
+                    const rainProb = hourly.precipitation_probability?.[i] ?? 0;
+
+                    const card = document.createElement("div");
+                    card.className = "hour-item";
+                    card.innerHTML = `
+                        <span class="hour-time">${escapeHTML(hourStr)}</span>
+                        <span class="hour-emoji">${hInfo.emoji}</span>
+                        <span class="hour-temp">${temp}°</span>
+                        <span class="hour-meta">☁️ ${clouds}%</span>
+                        <span class="hour-rain">💧 ${rainProb}%</span>
+                    `;
+                    hourlyList.appendChild(card);
+                }
+
+                const dailyList = document.getElementById("daily-list");
+                dailyList.innerHTML = "";
+                for (let d = 0; d < daily.time.length; d++) {
+                    const dateObj = parseLocalDate(daily.time[d]);
+                    const dayName = d === 0 ? "اليوم" : d === 1 ? "غدا" : dateObj.toLocaleDateString("ar-DZ", { weekday: "long" });
+                    const dInfo = decodeWeather(daily.weather_code[d], 1);
+                    const maxT = Math.round(daily.temperature_2m_max[d]);
+                    const minT = Math.round(daily.temperature_2m_min[d]);
+                    const dayRainProb = daily.precipitation_probability_max?.[d] ?? 0;
+
+                    const row = document.createElement("div");
+                    row.className = "day-item";
+                    row.innerHTML = `
+                        <span class="day-name">${escapeHTML(dayName)}</span>
+                        <div class="day-cond">
+                            <span>${dInfo.emoji}</span>
+                            <span>${escapeHTML(dInfo.desc)}</span>
+                        </div>
+                        <span class="day-rain-prob">💧 ${dayRainProb}%</span>
+                        <div class="day-temps">${maxT}° <span>/ ${minT}°</span></div>
+                    `;
+                    dailyList.appendChild(row);
+                }
+
+                answerBox.innerHTML = `تم تحديث بيانات <strong>${escapeHTML(city)}</strong>. الجو الآن <strong>${escapeHTML(info.desc)}</strong> بدرجة حرارة <strong>${Math.round(current.temperature_2m)}°C</strong>. استخدم اختصارات <strong>غدا</strong>، <strong>الأسبوع</strong>، أو <strong>الرياح</strong>.`;
+            }
+
+            function answerWeatherQuestion(rawQuestion) {
+                if (!currentWeatherState) {
+                    answerBox.textContent = "يرجى البحث عن مدينة أولاً أو تفعيل GPS حتى أتمكن من تحليل حالة الطقس لك.";
+                    return;
+                }
+
+                const originalQuestion = rawQuestion.trim();
+                const q = normalizeArabic(originalQuestion);
+                if (!q) return;
+
+                const { city, current, daily } = currentWeatherState;
+                const safeCity = escapeHTML(city);
+                const info = decodeWeather(current.weather_code, current.is_day);
+                const temp = Math.round(current.temperature_2m);
+                const feels = Math.round(current.apparent_temperature);
+                const clouds = current.cloud_cover;
+                const humidity = current.relative_humidity_2m;
+                const wind = Math.round(current.wind_speed_10m);
+                const windDir = escapeHTML(getWindDirection(current.wind_direction_10m));
+                const maxWindToday = Math.round(daily.wind_speed_10m_max?.[0] ?? wind);
+                const rainTodayProb = daily.precipitation_probability_max?.[0] ?? 0;
+                const rainSumToday = daily.precipitation_sum?.[0] ?? current.precipitation;
+
+                let reply = "";
+
+                if (q.includes("غد") || q.includes("بكره")) {
+                    const tInfo = decodeWeather(daily.weather_code[1], 1);
+                    const tMax = Math.round(daily.temperature_2m_max[1]);
+                    const tMin = Math.round(daily.temperature_2m_min[1]);
+                    const tProb = daily.precipitation_probability_max?.[1] ?? 0;
+                    reply = `📅 <strong>غدا في ${safeCity}:</strong> ${escapeHTML(tInfo.desc)} ${tInfo.emoji} | العظمى <strong>${tMax}°C</strong> والصغرى <strong>${tMin}°C</strong> | المطر <strong>${tProb}%</strong>.`;
+                } 
+                else if (q.includes("اسبوع") || q.includes("الاسبوع") || q.includes("ايام") || q.includes("مقبل")) {
+                    const weekMax = Math.round(Math.max(...daily.temperature_2m_max));
+                    const weekMin = Math.round(Math.min(...daily.temperature_2m_min));
+                    const weekRainProb = Math.max(...(daily.precipitation_probability_max || [0]));
+                    const d2Info = decodeWeather(daily.weather_code[2] ?? daily.weather_code[0], 1);
+                    reply = `📆 <strong>الأسبوع في ${safeCity} (7 أيام):</strong> الحرارة بين <strong>${weekMin}°C</strong> و<strong>${weekMax}°C</strong> | أعلى احتمال مطر <strong>${weekRainProb}%</strong> | بعد غد: <strong>${escapeHTML(d2Info.desc)} ${d2Info.emoji}</strong>.`;
+                } 
+                else if (q.includes("رياح") || q.includes("هواء") || q.includes("عاصف")) {
+                    reply = `💨 <strong>الرياح في ${safeCity}:</strong> الحالية <strong>${wind} km/h</strong> (${windDir}) | القصوى اليوم <strong>${maxWindToday} km/h</strong>.`;
+                }
+                else if (q.includes("مطر") || q.includes("امطار") || q.includes("شتاء") || q.includes("رذاذ")) {
+                    reply = `🌧️ <strong>الأمطار في ${safeCity}:</strong> احتمال المطر اليوم <strong>${rainTodayProb}%</strong> | كمية الهطول المتوقعة اليوم <strong>${rainSumToday} mm</strong> (الحالي: <strong>${current.precipitation} mm</strong>).`;
+                }
+                else if (q.includes("رطوبه") || q.includes("رطب")) {
+                    reply = `💧 <strong>الرطوبة في ${safeCity}:</strong> الرطوبة النسبية الحالية <strong>${humidity}%</strong> مع إحساس حراري <strong>${feels}°C</strong>.`;
+                }
+                else if (q.includes("غيوم") || q.includes("سحاب") || q.includes("حراره") || q.includes("جو")) {
+                    reply = `⛅ <strong>الأجواء في ${safeCity}:</strong> ${escapeHTML(info.desc)} ${info.emoji} | الحرارة <strong>${temp}°C</strong> (الإحساس <strong>${feels}°C</strong>) | الغيوم <strong>${clouds}%</strong>.`;
+                }
+                else {
+                    reply = `📊 <strong>${safeCity}:</strong> ${escapeHTML(info.desc)} ${info.emoji}، الحرارة <strong>${temp}°C</strong> (الإحساس ${feels}°C)، الغيوم <strong>${clouds}%</strong>، الرياح <strong>${wind} km/h</strong>، والمطر <strong>${rainTodayProb}%</strong>.`;
+                }
+
+                answerBox.innerHTML = reply;
+                saveChatEntry(city, originalQuestion, reply);
+            }
+
+            searchForm.addEventListener("submit", (e) => {
+                e.preventDefault();
+                cityInput.blur();
+                fetchCityWeather(cityInput.value);
+            });
+
+            askForm.addEventListener("submit", (e) => {
+                e.preventDefault();
+                questionInput.blur();
+                answerWeatherQuestion(questionInput.value);
+                questionInput.value = "";
+            });
+
+            chipButtons.forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const q = btn.getAttribute("data-q");
+                    answerWeatherQuestion(q);
+                });
+            });
+
+            clearHistoryBtn.addEventListener("click", () => {
+                try {
+                    localStorage.removeItem(STORAGE_KEYS.CHAT_HISTORY);
+                } catch (_) {}
+                renderChatHistory();
+            });
+
+            gpsBtn.addEventListener("click", () => {
+                if (!navigator.geolocation) {
+                    showStatus("متصفحك لا يدعم تحديد الموقع الجغرافي (GPS).", true);
+                    return;
+                }
+
+                gpsBtn.disabled = true;
+                showStatus("جاري تحديد موقعك عبر GPS...");
+
+                navigator.geolocation.getCurrentPosition(
+                    async (pos) => {
+                        const { latitude, longitude } = pos.coords;
+                        let placeName = "موقعي الحالي";
+                        try {
+                            const revRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=ar`);
+                            if (revRes.ok) {
+                                const revData = await revRes.json();
+                                placeName = revData.city || revData.locality || revData.principalSubdivision || placeName;
+                            }
+                        } catch (_) {}
+                        await loadWeatherByCoords(latitude, longitude, placeName);
+                        gpsBtn.disabled = false;
+                    },
+                    () => {
+                        showStatus("تعذر الوصول للموقع. تأكد من تفعيل GPS ومنح الإذن للمتصفح.", true);
+                        gpsBtn.disabled = false;
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            });
+        })();
+    </script>
+</body>
+</html>
